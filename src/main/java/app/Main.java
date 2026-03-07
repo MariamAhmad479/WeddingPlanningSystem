@@ -2,6 +2,8 @@ package app;
 
 import boundary.GehazListUI;
 import boundary.GuestListUI;
+import factory.GUIFactory;
+import factory.ThemeManager;
 import javafx.application.Application;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
@@ -14,23 +16,36 @@ public class Main extends Application {
 
     @Override
     public void start(Stage primaryStage) {
+        buildMainScreen(primaryStage);
+    }
 
-        // ===== Title =====
-        Label title = new Label("Ayza Atgawez");
-        title.setStyle("-fx-font-size: 28px; -fx-font-weight: bold;");
+    private void buildMainScreen(Stage primaryStage) {
+        GUIFactory factory = ThemeManager.getFactory();
 
-        // ===== Buttons =====
-        Button gehazBtn = new Button("My Gehaz");
+        Label title = factory.createLabel("Ayza Atgawez");
+        title.setStyle(title.getStyle() + "-fx-font-size: 28px; -fx-font-weight: bold;");
+
+        Button themeButton = factory.createButton("Switch Theme");
+        themeButton.setPrefWidth(240);
+        themeButton.setPrefHeight(50);
+
+        Button gehazBtn = factory.createButton("My Gehaz");
         gehazBtn.setPrefWidth(240);
         gehazBtn.setPrefHeight(50);
-        gehazBtn.setStyle("-fx-font-size: 16px;");
 
-        Button guestBtn = new Button("Guest List");
+        Button guestBtn = factory.createButton("Guest List");
         guestBtn.setPrefWidth(240);
         guestBtn.setPrefHeight(50);
-        guestBtn.setStyle("-fx-font-size: 16px;");
 
-        // ===== Button Actions =====
+        themeButton.setOnAction(e -> {
+            if (ThemeManager.isDarkTheme()) {
+                ThemeManager.setLightTheme();
+            } else {
+                ThemeManager.setDarkTheme();
+            }
+            buildMainScreen(primaryStage);
+        });
+
         gehazBtn.setOnAction(e -> {
             GehazListUI gehazUI = new GehazListUI();
             gehazUI.start(primaryStage);
@@ -41,10 +56,15 @@ public class Main extends Application {
             guestUI.start(primaryStage);
         });
 
-        // ===== Layout =====
-        VBox root = new VBox(20, title, gehazBtn, guestBtn);
+        VBox root = factory.createCard(20);
+        root.getChildren().addAll(title, themeButton, gehazBtn, guestBtn);
         root.setAlignment(Pos.CENTER);
-        root.setStyle("-fx-background-color: #F9F6F1;");
+
+        if (ThemeManager.isDarkTheme()) {
+            root.setStyle(root.getStyle() + "-fx-background-color: #1e1e1e;");
+        } else {
+            root.setStyle(root.getStyle() + "-fx-background-color: #F9F6F1;");
+        }
 
         Scene scene = new Scene(root, 600, 450);
 

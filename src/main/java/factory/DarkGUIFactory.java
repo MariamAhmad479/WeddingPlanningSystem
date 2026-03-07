@@ -1,6 +1,6 @@
 package factory;
 
-import javafx.scene.Node;
+import javafx.geometry.Insets;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
@@ -10,30 +10,59 @@ public class DarkGUIFactory implements GUIFactory {
 
     @Override
     public Button createButton(String text) {
-        Button btn = new Button(text);
-        btn.getStyleClass().add("factory-button");
-        return btn;
-    }
+        Button button = new Button(text);
 
-    @Override
-    public TextField createTextField(String promptText) {
-        TextField tf = new TextField();
-        tf.setPromptText(promptText);
-        tf.getStyleClass().add("factory-textfield");
-        return tf;
+        button.setStyle(
+            "-fx-background-color: #444444;" +
+            "-fx-text-fill: white;" +
+            "-fx-font-size: 14px;" +
+            "-fx-background-radius: 8;"
+        );
+
+        return button;
     }
 
     @Override
     public Label createLabel(String text) {
-        Label lbl = new Label(text);
-        lbl.setStyle("-fx-text-fill: #E4E6EB; -fx-font-size: 14px;");
-        return lbl;
+        Label label = new Label(text);
+
+        label.setStyle(
+            "-fx-text-fill: white;" +
+            "-fx-font-size: 16px;" +
+            "-fx-font-weight: bold;"
+        );
+
+        return label;
     }
 
     @Override
-    public VBox createCard(double spacing, Node... children) {
-        VBox card = new VBox(spacing, children);
-        card.setStyle("-fx-background-color: #242526; -fx-background-radius: 8; -fx-border-color: #3A3B3C; -fx-border-radius: 8; -fx-padding: 16;");
-        return card;
+    public TextField createTextField(String prompt) {
+        TextField field = new TextField();
+        field.setPromptText(prompt);
+
+        field.setStyle(
+            "-fx-background-color: #2b2b2b;" +
+            "-fx-text-fill: white;" +
+            "-fx-border-color: #555555;" +
+            "-fx-border-radius: 5;"
+        );
+
+        return field;
+    }
+
+    @Override
+    public VBox createCard(int spacing) {
+        VBox box = new VBox(spacing);
+
+        box.setPadding(new Insets(15));
+
+        box.setStyle(
+            "-fx-background-color: #2b2b2b;" +
+            "-fx-border-color: #444444;" +
+            "-fx-border-radius: 10;" +
+            "-fx-background-radius: 10;"
+        );
+
+        return box;
     }
 }

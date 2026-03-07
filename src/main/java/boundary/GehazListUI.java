@@ -7,6 +7,7 @@ import entity.GehazItemData;
 import entity.GehazSummary;
 import enumeration.GehazCategory;
 import enumeration.GehazStatus;
+import factory.ThemeManager;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
@@ -15,7 +16,6 @@ import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
-import javafx.scene.control.cell.ComboBoxTableCell;
 import javafx.scene.layout.*;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
@@ -27,8 +27,8 @@ import java.util.Locale;
 public class GehazListUI {
 
     private final GehazItemController controller;
-    private final GehazItemAccessor accessor; 
-    private String currentBrideId = "BRIDE_001"; 
+    private final GehazItemAccessor accessor;
+    private String currentBrideId = "BRIDE_001";
 
     private final ObservableList<GehazItem> items = FXCollections.observableArrayList();
     private TableView<GehazItem> table;
@@ -42,7 +42,6 @@ public class GehazListUI {
     private Label bannerText;
     private boolean bannerVisible = false;
 
-
     public GehazListUI() {
         controller = new GehazItemController();
         controller.setCurrentBride(currentBrideId);
@@ -51,13 +50,16 @@ public class GehazListUI {
     }
 
     public void start(Stage stage) {
+        boolean dark = ThemeManager.isDarkTheme();
 
-        // ===== Navbar====
         HBox navbar = buildNavbar("My Gehaz");
 
-        // ===== Title =====
         Label title = new Label("My Gehaz");
-        title.getStyleClass().add("page-title");
+        title.setStyle(
+                "-fx-font-size: 28px;" +
+                "-fx-font-weight: bold;" +
+                "-fx-text-fill: " + (dark ? "#F7EDEE;" : "#4A1F25;")
+        );
 
         progressValue = new Label("0%");
         budgetValue = new Label("0 EGP");
@@ -72,12 +74,12 @@ public class GehazListUI {
         );
         kpis.setSpacing(12);
 
-        // ===== Buttons row =====
         Button viewRec = new Button("View Recommendations");
-        viewRec.getStyleClass().add("btn-primary");
+        stylePrimaryButton(viewRec, dark);
 
         Button addItemBtn = new Button("Add Item");
-        addItemBtn.getStyleClass().add("btn-primary");
+        stylePrimaryButton(addItemBtn, dark);
+
         addItemBtn.setOnAction(e -> {
             AddGehazItemUI addDialog = new AddGehazItemUI(controller, currentBrideId);
             boolean saved = addDialog.show(stage);
@@ -88,22 +90,31 @@ public class GehazListUI {
         HBox.setHgrow(actionsRow.getChildren().get(1), Priority.ALWAYS);
         actionsRow.setAlignment(Pos.CENTER_LEFT);
 
-        // ===== Info banner =====
         bannerText = new Label("");
-        bannerText.getStyleClass().add("info-banner-text");
+        bannerText.setStyle(
+                "-fx-font-size: 13px;" +
+                "-fx-font-weight: bold;" +
+                "-fx-text-fill: " + (dark ? "#F7EDEE;" : "#4A1F25;")
+        );
 
         banner = new HBox(bannerText);
-        banner.getStyleClass().add("info-banner");
+        banner.setPadding(new Insets(10));
+        banner.setStyle(
+                "-fx-background-color: " + (dark ? "#3A252A;" : "#F7E7CC;") +
+                "-fx-background-radius: 10;" +
+                "-fx-border-radius: 10;" +
+                "-fx-border-color: " + (dark ? "#5B3A40;" : "#D9C8B0;")
+        );
         banner.setVisible(false);
-        banner.setManaged(false); 
+        banner.setManaged(false);
 
         viewRec.setOnAction(e -> toggleRecommendations());
 
-
-        // ===== Table =====
         table = new TableView<>();
         table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
         table.setItems(items);
+        table.setEditable(true);
+        styleTable(table, dark);
 
         TableColumn<GehazItem, Number> numCol = new TableColumn<>("");
         numCol.setCellValueFactory(col -> new javafx.beans.property.ReadOnlyObjectWrapper<>(
@@ -112,7 +123,6 @@ public class GehazListUI {
         numCol.setMaxWidth(45);
         numCol.setStyle("-fx-alignment: CENTER;");
 
-
         TableColumn<GehazItem, String> itemCol = new TableColumn<>("Item");
         itemCol.setCellValueFactory(d -> new SimpleStringProperty(d.getValue().getName()));
 
@@ -120,10 +130,10 @@ public class GehazListUI {
         catCol.setCellValueFactory(d -> new SimpleObjectProperty<>(d.getValue().getCategory()));
         catCol.setCellFactory(col -> new TableCell<>() {
             private final Label pill = new Label();
+
             {
                 setAlignment(Pos.CENTER);
                 setContentDisplay(ContentDisplay.GRAPHIC_ONLY);
-
                 pill.setStyle(
                         "-fx-font-weight: bold;" +
                         "-fx-background-radius: 14;" +
@@ -156,123 +166,112 @@ public class GehazListUI {
             }
         });
 
-
-
         TableColumn<GehazItem, GehazStatus> statusCol = new TableColumn<>("Status");
-    statusCol.setCellValueFactory(data ->
-            new SimpleObjectProperty<>(data.getValue().getStatus())
-    );
+        statusCol.setCellValueFactory(data -> new SimpleObjectProperty<>(data.getValue().getStatus()));
+        statusCol.setEditable(true);
 
-    table.setEditable(true);
-    statusCol.setEditable(true);
+        statusCol.setCellFactory(col -> new TableCell<>() {
+            private final ComboBox<GehazStatus> combo =
+                    new ComboBox<>(FXCollections.observableArrayList(GehazStatus.values()));
 
-    statusCol.setCellFactory(col -> new TableCell<>() {
+            private final Label pill = new Label();
 
-        private final ComboBox<GehazStatus> combo =
-                new ComboBox<>(FXCollections.observableArrayList(GehazStatus.values()));
+            {
+                pill.setStyle(
+                        "-fx-font-weight: bold;" +
+                        "-fx-background-radius: 12;" +
+                        "-fx-padding: 4 12 4 12;"
+                );
 
-        private final Label pill = new Label();
+                combo.setMaxWidth(Double.MAX_VALUE);
 
-        {
-            pill.setStyle(
-                    "-fx-font-weight: bold;" +
-                    "-fx-background-radius: 12;" +
-                    "-fx-padding: 4 12 4 12;"
-            );
+                combo.setOnAction(e -> {
+                    GehazItem item = getTableView().getItems().get(getIndex());
+                    GehazStatus newStatus = combo.getValue();
 
-            combo.setMaxWidth(Double.MAX_VALUE);
+                    if (item != null && newStatus != null) {
+                        GehazItemData updatedData = new GehazItemData(
+                                item.getName(),
+                                item.getCategory(),
+                                newStatus,
+                                item.getCost()
+                        );
 
-            combo.setOnAction(e -> {
-                GehazItem item = getTableView().getItems().get(getIndex());
-                GehazStatus newStatus = combo.getValue();
+                        controller.submitEditItem(item.getItemId(), updatedData);
+                        commitEdit(newStatus);
+                        refresh();
+                    }
+                });
 
-                if (item != null && newStatus != null) {
-                    GehazItemData updatedData = new GehazItemData(
-                            item.getName(),
-                            item.getCategory(),
-                            newStatus,
-                            item.getCost()
-                    );
-
-                    controller.submitEditItem(item.getItemId(), updatedData);
-                    commitEdit(newStatus);
-                    refresh();
-                }
-            });
-
-            setAlignment(Pos.CENTER);
-        }
-
-        @Override
-        public void startEdit() {
-            super.startEdit();
-            if (getItem() == null) return;
-
-            combo.setValue(getItem());
-            setGraphic(combo);
-            setText(null);
-            setContentDisplay(ContentDisplay.GRAPHIC_ONLY);
-        }
-
-        @Override
-        public void cancelEdit() {
-            super.cancelEdit();
-            showPill(getItem());
-        }
-
-        @Override
-        protected void updateItem(GehazStatus status, boolean empty) {
-            super.updateItem(status, empty);
-
-            if (empty || status == null) {
-                setGraphic(null);
-                setText(null);
-                return;
+                setAlignment(Pos.CENTER);
             }
 
-            if (isEditing()) {
-                combo.setValue(status);
+            @Override
+            public void startEdit() {
+                super.startEdit();
+                if (getItem() == null) return;
+
+                combo.setValue(getItem());
                 setGraphic(combo);
+                setText(null);
                 setContentDisplay(ContentDisplay.GRAPHIC_ONLY);
-            } else {
-                showPill(status);
             }
-        }
 
-        private void showPill(GehazStatus status) {
-            boolean purchased = status == GehazStatus.PURCHASED;
+            @Override
+            public void cancelEdit() {
+                super.cancelEdit();
+                showPill(getItem());
+            }
 
-            pill.setText(purchased ? "Purchased" : "Not Purchased");
-            pill.setStyle(
-                    "-fx-font-weight: bold;" +
-                    "-fx-background-radius: 12;" +
-                    "-fx-padding: 4 12 4 12;" +
-                    "-fx-text-fill: #111;" +
-                    "-fx-background-color: " + (purchased ? "#87E395" : "#DDB2B9") + ";"
-            );
+            @Override
+            protected void updateItem(GehazStatus status, boolean empty) {
+                super.updateItem(status, empty);
 
-            setGraphic(pill);
-            setText(null);
-            setContentDisplay(ContentDisplay.GRAPHIC_ONLY);
-        }
-    });
+                if (empty || status == null) {
+                    setGraphic(null);
+                    setText(null);
+                    return;
+                }
 
+                if (isEditing()) {
+                    combo.setValue(status);
+                    setGraphic(combo);
+                    setContentDisplay(ContentDisplay.GRAPHIC_ONLY);
+                } else {
+                    showPill(status);
+                }
+            }
 
+            private void showPill(GehazStatus status) {
+                boolean purchased = status == GehazStatus.PURCHASED;
 
+                pill.setText(purchased ? "Purchased" : "Not Purchased");
+                pill.setStyle(
+                        "-fx-font-weight: bold;" +
+                        "-fx-background-radius: 12;" +
+                        "-fx-padding: 4 12 4 12;" +
+                        "-fx-text-fill: #111;" +
+                        "-fx-background-color: " + (purchased ? "#87E395" : "#DDB2B9") + ";"
+                );
+
+                setGraphic(pill);
+                setText(null);
+                setContentDisplay(ContentDisplay.GRAPHIC_ONLY);
+            }
+        });
 
         TableColumn<GehazItem, String> costCol = new TableColumn<>("Cost");
-        costCol.setCellValueFactory(d -> new SimpleStringProperty(
-                formatEGP(d.getValue().getCost())
-        ));
+        costCol.setCellValueFactory(d -> new SimpleStringProperty(formatEGP(d.getValue().getCost())));
 
         TableColumn<GehazItem, String> editCol = new TableColumn<>("");
         editCol.setCellFactory(col -> new TableCell<>() {
             private final Button edit = new Button("✎");
+
             {
-                edit.getStyleClass().add("btn-outline");
+                styleOutlineButton(edit, dark);
                 edit.setOnAction(e -> {
                     GehazItem item = getTableView().getItems().get(getIndex());
-                    openEditItemDialog(stage, item); // we’ll add this function below
+                    openEditItemDialog(stage, item);
                 });
             }
 
@@ -288,14 +287,16 @@ public class GehazListUI {
         TableColumn<GehazItem, String> deleteCol = new TableColumn<>("");
         deleteCol.setCellFactory(col -> new TableCell<>() {
             private final Button del = new Button("🗑");
+
             {
-                del.getStyleClass().add("btn-outline");
+                styleOutlineButton(del, dark);
                 del.setOnAction(e -> {
                     GehazItem item = getTableView().getItems().get(getIndex());
                     controller.deleteItem(item.getItemId());
                     refresh();
                 });
             }
+
             @Override
             protected void updateItem(String it, boolean empty) {
                 super.updateItem(it, empty);
@@ -307,19 +308,16 @@ public class GehazListUI {
 
         table.getColumns().addAll(numCol, itemCol, catCol, statusCol, costCol, editCol, deleteCol);
 
-
-
-        // ===== Page layout =====
         VBox page = new VBox(12, title, kpis, actionsRow, banner, table);
-        page.getStyleClass().add("page");
+        page.setPadding(new Insets(20));
+        page.setStyle("-fx-background-color: " + (dark ? "#1E1517;" : "#F6F1EB;"));
 
-        // Footer 
         VBox footer = buildFooter();
 
         VBox root = new VBox(navbar, page, footer);
+        root.setStyle("-fx-background-color: " + (dark ? "#1E1517;" : "#F6F1EB;"));
 
         Scene scene = new Scene(root, 900, 650);
-        scene.getStylesheets().add(getClass().getResource("guestlist.css").toExternalForm());
 
         stage.setTitle("Ayza Atgawez - My Gehaz");
         stage.setScene(scene);
@@ -331,9 +329,7 @@ public class GehazListUI {
     private void refresh() {
         List<GehazItem> list = controller.requestGehazData(currentBrideId);
         items.setAll(list);
-
         table.refresh();
-
 
         GehazSummary summary = computeSummary(list);
 
@@ -344,19 +340,33 @@ public class GehazListUI {
 
         if (bannerVisible) {
             bannerText.setText(buildRecommendationText(items));
-}
-
+        }
     }
 
-    // ===== helpers =====
     private VBox gehazCard(String labelText, Label valueLabel) {
+        boolean dark = ThemeManager.isDarkTheme();
+
         Label label = new Label(labelText);
-        label.getStyleClass().add("kpi-label");
-        valueLabel.getStyleClass().add("kpi-value");
+        label.setStyle(
+                "-fx-font-size: 14px;" +
+                "-fx-text-fill: " + (dark ? "#D4A85A;" : "#C49A4A;")
+        );
+
+        valueLabel.setStyle(
+                "-fx-font-size: 28px;" +
+                "-fx-font-weight: bold;" +
+                "-fx-text-fill: " + (dark ? "#F7EDEE;" : "#111111;")
+        );
 
         VBox card = new VBox(6, label, valueLabel);
-        card.getStyleClass().add("card-box");
+        card.setPadding(new Insets(16));
         card.setMinWidth(190);
+        card.setStyle(
+                "-fx-background-color: " + (dark ? "#2A1D20;" : "#F9F6F1;") +
+                "-fx-border-color: " + (dark ? "#5B3A40;" : "#D9C8B0;") +
+                "-fx-border-radius: 12;" +
+                "-fx-background-radius: 12;"
+        );
         return card;
     }
 
@@ -370,7 +380,7 @@ public class GehazListUI {
         GehazSummary s = new GehazSummary();
 
         double budget = accessor.getBudget(currentBrideId);
-        if (budget == 0) budget = 100000; // demo default
+        if (budget == 0) budget = 100000;
 
         double purchasedCost = 0;
         int purchasedCount = 0;
@@ -392,26 +402,19 @@ public class GehazListUI {
         return s;
     }
 
-
     private HBox buildNavbar(String active) {
+        boolean dark = ThemeManager.isDarkTheme();
+
         HBox navbar = new HBox(18);
-        navbar.getStyleClass().add("navbar");
         navbar.setAlignment(Pos.CENTER_LEFT);
+        navbar.setPadding(new Insets(18, 24, 18, 24));
+        navbar.setStyle("-fx-background-color: " + (dark ? "#EC008C;" : "#F18AAD;"));
 
-        Label navAppointments = new Label("Appointments");
-        navAppointments.getStyleClass().add("nav-item");
-
-        Label navGehaz = new Label("My Gehaz");
-        navGehaz.getStyleClass().add(active.equals("My Gehaz") ? "nav-item-active" : "nav-item");
-
-        Label navLogo = new Label("Ayza Atgawez");
-        navLogo.getStyleClass().add("nav-center-logo");
-
-        Label navGuestList = new Label("Guest List");
-        navGuestList.getStyleClass().add(active.equals("Guest List") ? "nav-item-active" : "nav-item");
-
-        Label navWedding = new Label("My Wedding");
-        navWedding.getStyleClass().add("nav-item");
+        Label navAppointments = navLabel("Appointments", false, dark);
+        Label navGehaz = navLabel("My Gehaz", active.equals("My Gehaz"), dark);
+        Label navLogo = navLogo("Ayza Atgawez", dark);
+        Label navGuestList = navLabel("Guest List", active.equals("Guest List"), dark);
+        Label navWedding = navLabel("My Wedding", false, dark);
 
         Region leftSpacer = new Region();
         Region rightSpacer = new Region();
@@ -425,162 +428,260 @@ public class GehazListUI {
     }
 
     private VBox buildFooter() {
+        boolean dark = ThemeManager.isDarkTheme();
+
         HBox footer = new HBox(60);
-        footer.getStyleClass().add("footer");
+        footer.setPadding(new Insets(30));
+        footer.setStyle("-fx-background-color: " + (dark ? "#2A1D20;" : "#6E2430;"));
 
-        Label aboutTitle = new Label("About Us");
-        aboutTitle.getStyleClass().add("footer-title");
-
-        Label aboutText = new Label(
+        Label aboutTitle = footerTitle("About Us", dark);
+        Label aboutText = footerText(
                 "Ayza Atgawez is your complete wedding\n" +
-                "planning companion, making your journey\n" +
-                "to the big day simple and stress-free."
+                        "planning companion, making your journey\n" +
+                        "to the big day simple and stress-free.",
+                dark
         );
-        aboutText.getStyleClass().add("footer-text");
         VBox col1 = new VBox(8, aboutTitle, aboutText);
 
-        Label quickTitle = new Label("Quick Links");
-        quickTitle.getStyleClass().add("footer-title");
+        Label quickTitle = footerTitle("Quick Links", dark);
         VBox quickLinks = new VBox(6,
-                footerLink("Appointments"),
-                footerLink("My Gehaz"),
-                footerLink("Guest List"),
-                footerLink("Wedding Checklist")
+                footerLink("Appointments", dark),
+                footerLink("My Gehaz", dark),
+                footerLink("Guest List", dark),
+                footerLink("Wedding Checklist", dark)
         );
         VBox col2 = new VBox(8, quickTitle, quickLinks);
 
-        Label servicesTitle = new Label("Services");
-        servicesTitle.getStyleClass().add("footer-title");
+        Label servicesTitle = footerTitle("Services", dark);
         VBox servicesLinks = new VBox(6,
-                footerLink("Booking Vendors"),
-                footerLink("Guest List & RSVP"),
-                footerLink("Wedding Checklist"),
-                footerLink("Gehaz Tracking")
+                footerLink("Booking Vendors", dark),
+                footerLink("Guest List & RSVP", dark),
+                footerLink("Wedding Checklist", dark),
+                footerLink("Gehaz Tracking", dark)
         );
         VBox col3 = new VBox(8, servicesTitle, servicesLinks);
 
-        Label contactTitle = new Label("Contact Us");
-        contactTitle.getStyleClass().add("footer-title");
-        Label contactText = new Label(
+        Label contactTitle = footerTitle("Contact Us", dark);
+        Label contactText = footerText(
                 "Email: info@ayzaatgawez.com\n" +
-                "Phone: +20 123 456 7890\n" +
-                "Address: Cairo, Egypt"
+                        "Phone: +20 123 456 7890\n" +
+                        "Address: Cairo, Egypt",
+                dark
         );
-        contactText.getStyleClass().add("footer-text");
         VBox col4 = new VBox(8, contactTitle, contactText);
 
         footer.getChildren().addAll(col1, col2, col3, col4);
 
         Label bottom = new Label("© 2024 Ayza Atgawez. All rights reserved.");
-        bottom.getStyleClass().add("footer-bottom");
+        bottom.setStyle(
+                "-fx-text-fill: " + (dark ? "#F7EDEE;" : "white;") +
+                "-fx-font-size: 13px;"
+        );
 
         HBox bottomRow = new HBox(bottom);
         bottomRow.setAlignment(Pos.CENTER);
+        bottomRow.setPadding(new Insets(8));
+        bottomRow.setStyle("-fx-background-color: " + (dark ? "#2A1D20;" : "#6E2430;"));
 
-        VBox footerBlock = new VBox(10, footer, bottomRow);
-        footerBlock.getStyleClass().add("footer");
-        return footerBlock;
+        return new VBox(10, footer, bottomRow);
     }
 
-    private Label footerLink(String text) {
+    private Label footerLink(String text, boolean dark) {
         Label l = new Label(text);
-        l.getStyleClass().add("footer-link");
+        l.setStyle(
+                "-fx-text-fill: " + (dark ? "#F7EDEE;" : "white;") +
+                "-fx-font-size: 14px;"
+        );
         return l;
     }
 
+    private Label footerTitle(String text, boolean dark) {
+        Label l = new Label(text);
+        l.setStyle(
+                "-fx-text-fill: " + (dark ? "#FFFFFF;" : "white;") +
+                "-fx-font-size: 16px;" +
+                "-fx-font-weight: bold;"
+        );
+        return l;
+    }
+
+    private Label footerText(String text, boolean dark) {
+        Label l = new Label(text);
+        l.setStyle(
+                "-fx-text-fill: " + (dark ? "#F7EDEE;" : "white;") +
+                "-fx-font-size: 14px;"
+        );
+        return l;
+    }
+
+    private Label navLabel(String text, boolean active, boolean dark) {
+        Label l = new Label(text);
+        l.setStyle(
+                "-fx-font-size: 14px;" +
+                "-fx-font-weight: bold;" +
+                "-fx-text-fill: " + (dark ? "#FFF4F7;" : "#4A1F25;") +
+                (active ? "-fx-underline: true;" : "")
+        );
+        return l;
+    }
+
+    private Label navLogo(String text, boolean dark) {
+        Label l = new Label(text);
+        l.setStyle(
+                "-fx-font-size: 16px;" +
+                "-fx-font-weight: bold;" +
+                "-fx-text-fill: " + (dark ? "#FFF4F7;" : "#4A1F25;")
+        );
+        return l;
+    }
+
+    private void stylePrimaryButton(Button button, boolean dark) {
+        button.setStyle(
+                "-fx-background-color: " + (dark ? "#7E3140;" : "#6E2430;") +
+                "-fx-text-fill: white;" +
+                "-fx-font-size: 14px;" +
+                "-fx-font-weight: bold;" +
+                "-fx-background-radius: 12;" +
+                "-fx-cursor: hand;"
+        );
+    }
+
+    private void styleOutlineButton(Button button, boolean dark) {
+        button.setStyle(
+                "-fx-background-color: transparent;" +
+                "-fx-text-fill: " + (dark ? "#F7EDEE;" : "#6E2430;") +
+                "-fx-border-color: " + (dark ? "#B57A88;" : "#8A4A58;") +
+                "-fx-border-radius: 10;" +
+                "-fx-background-radius: 10;" +
+                "-fx-font-weight: bold;" +
+                "-fx-cursor: hand;"
+        );
+    }
+
+    private void styleTable(TableView<?> table, boolean dark) {
+        table.setStyle(
+                "-fx-background-color: " + (dark ? "#2A1D20;" : "#F9F6F1;") +
+                "-fx-control-inner-background: " + (dark ? "#2A1D20;" : "#F9F6F1;") +
+                "-fx-table-cell-border-color: " + (dark ? "#5B3A40;" : "#E7DCC7;") +
+                "-fx-padding: 6;"
+        );
+    }
+
     private void openEditItemDialog(Stage owner, GehazItem item) {
+        boolean dark = ThemeManager.isDarkTheme();
 
-    Stage dialog = new Stage();
-    dialog.initOwner(owner);
-    dialog.initModality(Modality.APPLICATION_MODAL);
-    dialog.setTitle("Edit Item");
+        Stage dialog = new Stage();
+        dialog.initOwner(owner);
+        dialog.initModality(Modality.APPLICATION_MODAL);
+        dialog.setTitle("Edit Item");
 
-    Label header = new Label("Edit Item");
-    header.setStyle("-fx-font-size: 22px; -fx-font-weight: bold; -fx-text-fill: #111;");
-
-    TextField nameField = new TextField(item.getName());
-
-    ComboBox<GehazCategory> categoryBox = new ComboBox<>();
-    categoryBox.getItems().addAll(GehazCategory.values());
-    categoryBox.setValue(item.getCategory());
-
-    ComboBox<GehazStatus> statusBox = new ComboBox<>();
-    statusBox.getItems().addAll(GehazStatus.values());
-    statusBox.setValue(item.getStatus());
-
-    TextField costField = new TextField(String.valueOf(item.getCost()));
-
-    Label validation = new Label("");
-    validation.setStyle("-fx-text-fill: #B00020; -fx-font-weight: bold;");
-
-    VBox form = new VBox(12,
-            labeledField("Item Name", nameField),
-            labeledField("Category", categoryBox),
-            labeledField("Status", statusBox),
-            labeledField("Cost (EGP)", costField),
-            validation
-    );
-
-    Button cancel = new Button("Cancel");
-    cancel.getStyleClass().add("btn-outline");
-    cancel.setOnAction(e -> dialog.close());
-
-    Button save = new Button("Save");
-    save.getStyleClass().add("btn-primary");
-
-    save.setOnAction(e -> {
-        String name = nameField.getText().trim();
-        GehazCategory cat = categoryBox.getValue();
-        GehazStatus st = statusBox.getValue();
-
-        if (name.isEmpty()) { validation.setText("Please enter item name."); return; }
-        if (cat == null) { validation.setText("Please select a category."); return; }
-        if (st == null) { validation.setText("Please select a status."); return; }
-
-        double cost;
-        try {
-            cost = Double.parseDouble(costField.getText().trim());
-            if (cost < 0) throw new NumberFormatException();
-        } catch (Exception ex) {
-            validation.setText("Please enter a valid positive cost.");
-            return;
-        }
-
-        item.updateDetails(name, cat, cost);
-        item.setStatus(st);
-
-        GehazItemData updatedData = new GehazItemData(
-                nameField.getText(),
-                categoryBox.getValue(),
-                statusBox.getValue(),
-                Double.parseDouble(costField.getText())
+        Label header = new Label("Edit Item");
+        header.setStyle(
+                "-fx-font-size: 22px;" +
+                "-fx-font-weight: bold;" +
+                "-fx-text-fill: " + (dark ? "#F7EDEE;" : "#111111;")
         );
 
-        controller.submitEditItem(item.getItemId(), updatedData);
+        TextField nameField = new TextField(item.getName());
 
-        dialog.close();
-        refresh();
-    });
+        ComboBox<GehazCategory> categoryBox = new ComboBox<>();
+        categoryBox.getItems().addAll(GehazCategory.values());
+        categoryBox.setValue(item.getCategory());
 
-    HBox buttons = new HBox(10, cancel, save);
-    buttons.setAlignment(Pos.CENTER_RIGHT);
+        ComboBox<GehazStatus> statusBox = new ComboBox<>();
+        statusBox.getItems().addAll(GehazStatus.values());
+        statusBox.setValue(item.getStatus());
 
-    VBox content = new VBox(16, header, form, buttons);
-    content.setPadding(new Insets(20));
-    content.setStyle("-fx-background-color: white; -fx-background-radius: 12; -fx-border-radius: 12; -fx-border-color: #E7DCC7;");
+        TextField costField = new TextField(String.valueOf(item.getCost()));
 
-    Scene scene = new Scene(new StackPane(content), 520, 460);
-    scene.getStylesheets().add(getClass().getResource("guestlist.css").toExternalForm());
-    dialog.setScene(scene);
+        Label validation = new Label("");
+        validation.setStyle("-fx-text-fill: #B00020; -fx-font-weight: bold;");
 
-    dialog.showAndWait();
-}
+        VBox form = new VBox(12,
+                labeledField("Item Name", nameField),
+                labeledField("Category", categoryBox),
+                labeledField("Status", statusBox),
+                labeledField("Cost (EGP)", costField),
+                validation
+        );
+
+        Button cancel = new Button("Cancel");
+        styleOutlineButton(cancel, dark);
+        cancel.setOnAction(e -> dialog.close());
+
+        Button save = new Button("Save");
+        stylePrimaryButton(save, dark);
+
+        save.setOnAction(e -> {
+            String name = nameField.getText().trim();
+            GehazCategory cat = categoryBox.getValue();
+            GehazStatus st = statusBox.getValue();
+
+            if (name.isEmpty()) {
+                validation.setText("Please enter item name.");
+                return;
+            }
+            if (cat == null) {
+                validation.setText("Please select a category.");
+                return;
+            }
+            if (st == null) {
+                validation.setText("Please select a status.");
+                return;
+            }
+
+            double cost;
+            try {
+                cost = Double.parseDouble(costField.getText().trim());
+                if (cost < 0) throw new NumberFormatException();
+            } catch (Exception ex) {
+                validation.setText("Please enter a valid positive cost.");
+                return;
+            }
+
+            item.updateDetails(name, cat, cost);
+            item.setStatus(st);
+
+            GehazItemData updatedData = new GehazItemData(
+                    nameField.getText(),
+                    categoryBox.getValue(),
+                    statusBox.getValue(),
+                    Double.parseDouble(costField.getText())
+            );
+
+            controller.submitEditItem(item.getItemId(), updatedData);
+
+            dialog.close();
+            refresh();
+        });
+
+        HBox buttons = new HBox(10, cancel, save);
+        buttons.setAlignment(Pos.CENTER_RIGHT);
+
+        VBox content = new VBox(16, header, form, buttons);
+        content.setPadding(new Insets(20));
+        content.setStyle(
+                "-fx-background-color: " + (dark ? "#2A1D20;" : "white;") +
+                "-fx-background-radius: 12;" +
+                "-fx-border-radius: 12;" +
+                "-fx-border-color: " + (dark ? "#5B3A40;" : "#E7DCC7;")
+        );
+
+        Scene scene = new Scene(new StackPane(content), 520, 460);
+        dialog.setScene(scene);
+        dialog.showAndWait();
+    }
 
     private VBox labeledField(String labelText, javafx.scene.Node field) {
+        boolean dark = ThemeManager.isDarkTheme();
+
         Label label = new Label(labelText);
-        label.setStyle("-fx-font-weight: bold; -fx-text-fill: #111;");
-        VBox box = new VBox(6, label, field);
-        return box;
+        label.setStyle(
+                "-fx-font-weight: bold;" +
+                "-fx-text-fill: " + (dark ? "#F7EDEE;" : "#111111;")
+        );
+
+        return new VBox(6, label, field);
     }
 
     private void toggleRecommendations() {
@@ -597,47 +698,43 @@ public class GehazListUI {
     }
 
     private String buildRecommendationText(List<GehazItem> list) {
-
-    if (list == null || list.isEmpty()) {
-        return "You haven’t added any items yet. Add essentials first to start tracking progress.";
-    }
-
-    int essentialTotal = 0;
-    int essentialPurchased = 0;
-    int essentialRemaining = 0;
-
-    int optionalTotal = 0;
-    int optionalPurchased = 0;
-
-    for (GehazItem it : list) {
-        if (it.getCategory() == null || it.getStatus() == null) continue;
-
-        boolean purchased = it.getStatus() == GehazStatus.PURCHASED;
-
-        if (it.getCategory().name().equalsIgnoreCase("ESSENTIAL")) {
-            essentialTotal++;
-            if (purchased) essentialPurchased++;
-            else essentialRemaining++;
-        } else {
-            optionalTotal++;
-            if (purchased) optionalPurchased++;
+        if (list == null || list.isEmpty()) {
+            return "You haven’t added any items yet. Add essentials first to start tracking progress.";
         }
-    }
 
-    if (essentialTotal > 0) {
-        int pct = (int) Math.round((essentialPurchased * 100.0) / essentialTotal);
+        int essentialTotal = 0;
+        int essentialPurchased = 0;
+        int essentialRemaining = 0;
 
-        if (essentialRemaining > 0) {
-            return "Essentials are " + pct + "% done. You have " + essentialRemaining + " essential item(s) remaining.";
-        } else {
-            return "All essentials are completed! You can now focus on optional items (" +
-                    optionalPurchased + "/" + optionalTotal + " purchased).";
+        int optionalTotal = 0;
+        int optionalPurchased = 0;
+
+        for (GehazItem it : list) {
+            if (it.getCategory() == null || it.getStatus() == null) continue;
+
+            boolean purchased = it.getStatus() == GehazStatus.PURCHASED;
+
+            if (it.getCategory().name().equalsIgnoreCase("ESSENTIAL")) {
+                essentialTotal++;
+                if (purchased) essentialPurchased++;
+                else essentialRemaining++;
+            } else {
+                optionalTotal++;
+                if (purchased) optionalPurchased++;
+            }
         }
+
+        if (essentialTotal > 0) {
+            int pct = (int) Math.round((essentialPurchased * 100.0) / essentialTotal);
+
+            if (essentialRemaining > 0) {
+                return "Essentials are " + pct + "% done. You have " + essentialRemaining + " essential item(s) remaining.";
+            } else {
+                return "All essentials are completed! You can now focus on optional items (" +
+                        optionalPurchased + "/" + optionalTotal + " purchased).";
+            }
+        }
+
+        return "No essentials found yet. Add essential items first to get a meaningful progress tracking.";
     }
-
-    return "No essentials found yet. Add essential items first to get a meaningful progress tracking.";
-    }
-
-
-
 }
