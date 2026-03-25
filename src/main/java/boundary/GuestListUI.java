@@ -67,16 +67,16 @@ public class GuestListUI {
         Button addGuestBtn = new Button("Add Guest");
         stylePrimaryButton(addGuestBtn, dark);
 
-        Button sendInvitationBtn = new Button("Send Invitation");
+        /*Button sendInvitationBtn = new Button("Send Invitation");
         stylePrimaryButton(sendInvitationBtn, dark);
 
         Button sendReminderBtn = new Button("Send Reminder");
-        stylePrimaryButton(sendReminderBtn, dark);
+        stylePrimaryButton(sendReminderBtn, dark);*/
 
         addGuestBtn.setOnAction(e -> openAddGuestDialog());
-        sendReminderBtn.setOnAction(e -> controller.sendReminderToPendingGuests());
+        //sendReminderBtn.setOnAction(e -> controller.sendReminderToPendingGuests());
 
-        HBox actions = new HBox(10, addGuestBtn, sendInvitationBtn, sendReminderBtn);
+        HBox actions = new HBox(10, addGuestBtn);
         actions.setAlignment(Pos.CENTER_RIGHT);
 
         BorderPane sectionBar = new BorderPane();
@@ -92,6 +92,16 @@ public class GuestListUI {
         TableColumn<Guest, String> nameCol = new TableColumn<>("Guest Name");
         nameCol.setCellValueFactory(d -> new SimpleStringProperty(d.getValue().getGuestName()));
 
+        TableColumn<Guest, String> emailCol = new TableColumn<>("Email");
+        emailCol.setCellValueFactory(d -> new SimpleStringProperty(
+                d.getValue().getEmail() != null ? d.getValue().getEmail() : ""
+        ));
+
+        TableColumn<Guest, String> smsCol = new TableColumn<>("SMS");
+        smsCol.setCellValueFactory(d -> new SimpleStringProperty(
+                d.getValue().getSms() != null ? d.getValue().getSms() : ""
+        ));
+
         TableColumn<Guest, String> categoryCol = new TableColumn<>("Category");
         categoryCol.setCellValueFactory(d -> new SimpleStringProperty(d.getValue().getGuestCategory()));
 
@@ -99,9 +109,11 @@ public class GuestListUI {
         plusCol.setCellValueFactory(d -> new SimpleStringProperty(String.valueOf(d.getValue().getPlusOneCount())));
 
         TableColumn<Guest, String> rsvpCol = new TableColumn<>("RSVP Status");
-        rsvpCol.setCellValueFactory(d -> new SimpleStringProperty(d.getValue().getRsvpStatus().name()));
+        rsvpCol.setCellValueFactory(d -> new SimpleStringProperty(
+                d.getValue().getRsvpStatus() != null ? d.getValue().getRsvpStatus().name() : ""
+        ));
 
-        table.getColumns().addAll(nameCol, categoryCol, plusCol, rsvpCol);
+        table.getColumns().addAll(nameCol, emailCol, smsCol, categoryCol, plusCol, rsvpCol);
 
         VBox page = new VBox(10, pageTitle, kpiRow, sectionBar, table);
         page.setPadding(new Insets(20));
@@ -157,6 +169,10 @@ public class GuestListUI {
         int pending = 0;
 
         for (Guest g : guests) {
+            if (g.getRsvpStatus() == null) {
+                continue;
+            }
+
             switch (g.getRsvpStatus()) {
                 case ATTENDING:
                     attending++;
@@ -193,6 +209,7 @@ public class GuestListUI {
 
         TextField nameField = themedTextField("Guest name", dark);
         TextField emailField = themedTextField("example@email.com", dark);
+        TextField smsField = themedTextField("+201001234567", dark);
         TextField categoryField = themedTextField("e.g., Family / Friends / Colleagues", dark);
         TextField plusOneField = themedTextField("0", dark);
 
@@ -209,6 +226,7 @@ public class GuestListUI {
         VBox form = new VBox(12,
                 labeledField("Guest Name", nameField),
                 labeledField("Email", emailField),
+                labeledField("SMS", smsField),
                 labeledField("Category", categoryField),
                 labeledField("Plus Ones", plusOneField),
                 validation
@@ -239,6 +257,7 @@ public class GuestListUI {
         saveBtn.addEventFilter(javafx.event.ActionEvent.ACTION, ev -> {
             String name = nameField.getText().trim();
             String email = emailField.getText().trim();
+            String sms = smsField.getText().trim();
             String category = categoryField.getText().trim();
 
             if (name.isEmpty()) {
@@ -249,6 +268,12 @@ public class GuestListUI {
 
             if (email.isEmpty() || !email.contains("@") || email.startsWith("@") || email.endsWith("@")) {
                 validation.setText("Please enter a valid email.");
+                ev.consume();
+                return;
+            }
+
+            if (sms.isEmpty()) {
+                validation.setText("Please enter SMS number.");
                 ev.consume();
                 return;
             }
@@ -270,7 +295,7 @@ public class GuestListUI {
                 return;
             }
 
-            GuestData data = new GuestData(name, email, category, plusOnes);
+            GuestData data = new GuestData(name, email,category, plusOnes,sms);
             controller.createGuest(data);
             refreshUI();
         });

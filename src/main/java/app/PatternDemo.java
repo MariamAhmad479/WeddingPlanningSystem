@@ -1,15 +1,15 @@
 package app;
 
 import java.util.Date;
-
+import java.util.List;
+import DAO.GuestDB;
+import entity.Guest;
+import DAO.GehazItemAccessor;
 import entity.GehazItem;
 import entity.meal.GuestMeal;
 import entity.meal.PremiumDessertDecorator;
 import entity.meal.StandardMeal;
 import entity.meal.VeganMealDecorator;
-import enumeration.GehazCategory;
-import enumeration.GehazStatus;
-import factory.GehazItemType;
 import factory.GehazItemTypeFactory;
 import service.calendar.CalendarSync;
 import service.calendar.GoogleCalendarAPI;
@@ -51,36 +51,57 @@ public class PatternDemo {
         System.out.println("\n--- Bridge Case 1: Notification System ---");
         MessageSender emailSender = new EmailSender();
         MessageSender smsSender = new SmsSender();
+        
+        GuestDB guestAccessor = new GuestDB();
+        List<Guest> guests = guestAccessor.getGuests("BRIDE_001");
 
-        Notification reminderByEmail =
-                new ReminderNotification(emailSender, "Nour Ahmed", "Wedding RSVP Reminder");
-        Notification reminderBySms =
-                new ReminderNotification(smsSender, "Sara Khalil", "Wedding RSVP Reminder");
+
+        for (Guest guest : guests) {
+                    Notification reminder = new ReminderNotification(
+                            emailSender,
+                            guest.getGuestName(),
+                            guest.getEmail(),
+                            "Wedding Email RSVP Reminder"
+                    );
+                    reminder.send();
+                }
+        
+        for (Guest guest : guests) {
+                    Notification reminder = new ReminderNotification(
+                            smsSender,
+                            guest.getGuestName(),
+                            guest.getSms(),
+                            "Wedding Sms RSVP Reminder"
+                    );
+                    reminder.send();
+                }
+        
+        int totalGuests = guests.size();
+        int attendingGuests = 0;
+
+        for (Guest guest : guests) {
+            if (guest.getRsvpStatus() != null && guest.getRsvpStatus().name().equals("ATTENDING")) {
+                attendingGuests++;
+            }
+        }
+        
         Notification cancellationByEmail =
                 new CancellationNotification(emailSender, "APT-2026-015");
 
-        reminderByEmail.send();
-        reminderBySms.send();
         cancellationByEmail.send();
 
         System.out.println("\n--- Bridge Case 2: Document Export ---");
-        DocumentRenderer pdfRenderer = new PdfRenderer();
-        DocumentRenderer wordRenderer = new WordRenderer();
-
+        DocumentRenderer renderer = new PdfRenderer();
         Document vendorContract = new VendorContract(
-                pdfRenderer,
+                renderer,
                 "Cairo Lens Studio",
                 "Photography package for 6 hours + couple session"
         );
-
-        Document guestListReport = new GuestListReport(
-                wordRenderer,
-                250,
-                180
-        );
-
         vendorContract.exportDocument();
-        guestListReport.exportDocument();
+        
+        DocumentRenderer wordRenderer = new WordRenderer();
+        Document report = new GuestListReport(wordRenderer, totalGuests, attendingGuests);
+        report.exportDocument();
     }
 
     private static void runAdapterPattern() {
@@ -108,50 +129,25 @@ public class PatternDemo {
         System.out.println("3. FLYWEIGHT PATTERN");
         System.out.println("======================================");
 
-        GehazItemType fridgeType1 =
-                GehazItemTypeFactory.getGehazItemType("Refrigerator", GehazCategory.ESSENTIAL, 15000.0);
-        GehazItemType sofaType1 =
-                GehazItemTypeFactory.getGehazItemType("Sofa", GehazCategory.ESSENTIAL, 8000.0);
-        GehazItemType fridgeType2 =
-                GehazItemTypeFactory.getGehazItemType("Refrigerator", GehazCategory.ESSENTIAL, 15000.0);
-
-        System.out.println("\n[Flyweight] fridgeType1 == fridgeType2 ? " + (fridgeType1 == fridgeType2));
-
-        GehazItem item1 = new GehazItem("bride-001", fridgeType1);
-        item1.setCost(15000.0);
-        item1.setStatus(GehazStatus.NOT_PURCHASED);
-
-        GehazItem item2 = new GehazItem("bride-002", fridgeType1);
-        item2.setCost(14500.0);
-        item2.setStatus(GehazStatus.NOT_PURCHASED);
-
-        GehazItem item3 = new GehazItem("bride-003", fridgeType2);
-        item3.setCost(15000.0);
-        item3.setStatus(GehazStatus.NOT_PURCHASED);
-
-        GehazItem item4 = new GehazItem("bride-001", sofaType1);
-        item4.setCost(8000.0);
-        item4.setStatus(GehazStatus.NOT_PURCHASED);
-
-        GehazItem item5 = new GehazItem("bride-002", sofaType1);
-        item5.setCost(8000.0);
-        item5.setStatus(GehazStatus.NOT_PURCHASED);
-
-        GehazItem item6 = new GehazItem("bride-003", sofaType1);
-        item6.setCost(8000.0);
-        item6.setStatus(GehazStatus.NOT_PURCHASED);
+        GehazItemAccessor gehazAccessor = new GehazItemAccessor();
+        List<GehazItem> items = gehazAccessor.getItemsByBrideId("BRIDE_001");
 
         System.out.println("\n--- Gehaz Items (extrinsic unique, intrinsic shared) ---");
-        printGehazItem(item1);
-        printGehazItem(item2);
-        printGehazItem(item3);
-        printGehazItem(item4);
-        printGehazItem(item5);
-        printGehazItem(item6);
+        for (GehazItem item : items) {
+            System.out.println(
+                    "itemId=" + item.getItemId() +
+                    ", brideId=" + item.getBrideId() +
+                    ", name=" + item.getName() +
+                    ", category=" + item.getCategory() +
+                    ", status=" + item.getStatus() +
+                    ", cost=" + item.getCost()
+            );
+        }
 
+        int totalgehaz = items.size();
         System.out.println("\n[Flyweight] GehazItemType objects in cache: "
                 + GehazItemTypeFactory.getCacheSize()
-                + " (shared across 6 GehazItem instances)");
+                + " shared across " + totalgehaz + " GehazItem instances");
     }
 
     private static void runDecoratorPattern() {
@@ -192,15 +188,5 @@ public class PatternDemo {
         System.out.println("\nVegan + premium dessert:");
         System.out.println("Description: " + premiumVeganMeal.getMealDescription());
         System.out.println("Cost: " + premiumVeganMeal.getCost());
-    }
-
-    private static void printGehazItem(GehazItem item) {
-        System.out.printf(
-                "brideId=%-12s name=%-15s cost=%-8.1f status=%s%n",
-                item.getBrideId(),
-                item.getName(),
-                item.getCost(),
-                item.getStatus()
-        );
     }
 }

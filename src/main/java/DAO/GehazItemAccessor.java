@@ -44,10 +44,10 @@ public class GehazItemAccessor {
                 item.setBrideId(rs.getString("bride_id"));
                 item.updateDetails(
                         rs.getString("name"),
-                        GehazCategory.valueOf(rs.getString("category")),
+                        GehazCategory.valueOf(rs.getString("category").toUpperCase()),
                         rs.getDouble("cost")
                 );
-                item.setStatus(GehazStatus.valueOf(rs.getString("status")));
+                item.setStatus(GehazStatus.valueOf(rs.getString("status").toUpperCase()));
 
                 list.add(item);
             }

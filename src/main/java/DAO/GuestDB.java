@@ -31,7 +31,7 @@ public class GuestDB {
         List<Guest> list = new ArrayList<>();
 
         String sql =
-            "SELECT guest_id, bride_id, guest_name, email, guest_category, plus_one_count, rsvp_status, rsvp_timestamp " +
+            "SELECT guest_id, bride_id, guest_name, email, sms, guest_category, plus_one_count, rsvp_status, rsvp_timestamp " +
             "FROM dbo.Guest " +
             "WHERE bride_id = ?";
 
@@ -48,6 +48,7 @@ public class GuestDB {
                 g.setBrideId(rs.getString("bride_id"));
                 g.setGuestName(rs.getString("guest_name"));
                 g.setEmail(rs.getString("email"));
+                g.setSms(rs.getString("sms"));
                 g.setGuestCategory(rs.getString("guest_category"));
                 g.setPlusOneCount(rs.getInt("plus_one_count"));
 
@@ -76,8 +77,8 @@ public class GuestDB {
     public void saveGuest(Guest guest) {
         String sql =
             "INSERT INTO dbo.Guest " +
-            "(guest_id, bride_id, guest_name, email, guest_category, plus_one_count, rsvp_status) " +
-            "VALUES (?, ?, ?, ?, ?, ?, ?)";
+            "(guest_id, bride_id, guest_name, email, sms, guest_category, plus_one_count, rsvp_status) " +
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
 
         try {
             Connection con = DBConnection.getInstance().getConnection();
@@ -87,9 +88,10 @@ public class GuestDB {
             ps.setString(2, guest.getBrideId());
             ps.setString(3, guest.getGuestName());
             ps.setString(4, guest.getEmail());
-            ps.setString(5, guest.getGuestCategory());
-            ps.setInt(6, guest.getPlusOneCount());
-            ps.setString(7, guest.getRsvpStatus().name());
+            ps.setString(5, guest.getSms());
+            ps.setString(6, guest.getGuestCategory());
+            ps.setInt(7, guest.getPlusOneCount());
+            ps.setString(8, guest.getRsvpStatus().name());
 
             ps.executeUpdate();
             ps.close();
@@ -125,7 +127,7 @@ public class GuestDB {
         List<Guest> list = new ArrayList<>();
 
         String sql =
-            "SELECT guest_id, bride_id, guest_name, email, guest_category, plus_one_count, rsvp_status, rsvp_timestamp " +
+            "SELECT guest_id, bride_id, guest_name, email, sms, guest_category, plus_one_count, rsvp_status, rsvp_timestamp " +
             "FROM dbo.Guest " +
             "WHERE bride_id = ? AND rsvp_status = ?";
 
@@ -143,6 +145,7 @@ public class GuestDB {
                 g.setBrideId(rs.getString("bride_id"));
                 g.setGuestName(rs.getString("guest_name"));
                 g.setEmail(rs.getString("email"));
+                g.setSms(rs.getString("sms"));
                 g.setGuestCategory(rs.getString("guest_category"));
                 g.setPlusOneCount(rs.getInt("plus_one_count"));
 

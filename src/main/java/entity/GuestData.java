@@ -6,15 +6,17 @@ public class GuestData {
     private String category;
     private int plusOneCount;
     public String email;
+    public String sms;
 
     public GuestData() {
     }
 
-    public GuestData(String name,String email, String category, int plusOneCount) {
+    public GuestData(String name,String email, String category, int plusOneCount, String sms) {
         this.name = name;
         this.email = email;
         this.category = category;
         this.plusOneCount = plusOneCount;
+        this.sms = sms;
     }
     
     public String getEmail() {
@@ -30,5 +32,9 @@ public class GuestData {
 
     public int getPlusOneCount() {
         return plusOneCount;
+    }
+    
+    public String getSms() {
+        return sms;
     }
 }

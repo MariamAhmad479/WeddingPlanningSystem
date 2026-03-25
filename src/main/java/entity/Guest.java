@@ -14,6 +14,7 @@ public class Guest implements User {
     private LocalDateTime rsvpTimestamp;
     private String brideId;
     private String email;
+    private String sms;
 
     public Guest() {
     }
@@ -23,7 +24,8 @@ public class Guest implements User {
             String guestName,
             String guestCategory,
             int plusOneCount,
-            RSVPStatus rsvpStatus) {
+            RSVPStatus rsvpStatus,
+            String sms) {
 
         this.guestId = guestId;
         this.brideId = brideId;
@@ -32,6 +34,7 @@ public class Guest implements User {
         this.plusOneCount = plusOneCount;
         this.rsvpStatus = rsvpStatus;
         this.rsvpTimestamp = LocalDateTime.now();
+        this.sms = sms;
     }
 
     public String getEmail() {
@@ -103,6 +106,14 @@ public class Guest implements User {
 
     public LocalDateTime getRsvpTimestamp() {
         return rsvpTimestamp;
+    }
+    
+    public String getSms() {
+        return sms;
+    }
+    
+    public void setSms(String sms) {
+        this.sms = sms;
     }
 
     @Override
