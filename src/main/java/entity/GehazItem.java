@@ -4,32 +4,47 @@ import java.util.UUID;
 
 import enumeration.GehazCategory;
 import enumeration.GehazStatus;
+import factory.GehazItemType;
+import factory.GehazItemTypeFactory;
 
+/**
+ * The Context class that contains the extrinsic state (brideId, status, customCost).
+ * It delegates intrinsic state behavior (name, category) to the GehazItemType flyweight object.
+ */
 public class GehazItem {
 
     private String itemId;
-    private String name;
-     private String brideId;
-    private GehazCategory category;
+    private String brideId;
     private GehazStatus status;
-    private double cost;
+    private double customCost;
+
+    // The Flyweight object containing shared state
+    private GehazItemType itemType;
 
     public GehazItem() {
         this.itemId = UUID.randomUUID().toString();
         this.status = GehazStatus.NOT_PURCHASED;
     }
 
+    public GehazItem(String brideId, GehazItemType itemType) {
+        this.itemId = UUID.randomUUID().toString();
+        this.brideId = brideId;
+        this.itemType = itemType;
+        this.status = GehazStatus.NOT_PURCHASED;
+        this.customCost = itemType.getDefaultCost();
+    }
+
     public void updateDetails(String name, enumeration.GehazCategory category, double cost) {
-        this.name = name;
-        this.category = category;
-        this.cost = cost;
+        // Fetch or create the flyweight from the factory
+        this.itemType = GehazItemTypeFactory.getGehazItemType(name, category, cost);
+        this.customCost = cost;
     }
 
-        public void setCost(double cost) {
-        this.cost = cost;
+    public void setCost(double cost) {
+        this.customCost = cost;
     }
 
-        public void setItemId(String itemId) {
+    public void setItemId(String itemId) {
         this.itemId = itemId;
     }
 
@@ -38,17 +53,25 @@ public class GehazItem {
     }
 
     public void setItemName(String name) {
-        this.name = name;
+        GehazCategory cat = itemType != null ? itemType.getCategory() : null;
+        double defCost = itemType != null ? itemType.getDefaultCost() : 0.0;
+        this.itemType = GehazItemTypeFactory.getGehazItemType(name, cat, defCost);
     }
 
     public void setCategory(GehazCategory category) {
-        this.category = category;
+        String name = itemType != null ? itemType.getName() : "Unknown";
+        double defCost = itemType != null ? itemType.getDefaultCost() : 0.0;
+        this.itemType = GehazItemTypeFactory.getGehazItemType(name, category, defCost);
     }
 
     public void setStatus(enumeration.GehazStatus newStatus) {
         this.status = newStatus;
     }
-
+    
+    public void setItemType(GehazItemType itemType) {
+        this.itemType = itemType;
+        this.customCost = itemType.getDefaultCost();
+    }
 
     public String getBrideId() {
         return brideId;
@@ -59,11 +82,11 @@ public class GehazItem {
     }
 
     public String getName() {
-        return name;
+        return itemType != null ? itemType.getName() : null;
     }
 
     public GehazCategory getCategory() {
-        return category;
+        return itemType != null ? itemType.getCategory() : null;
     }
 
     public GehazStatus getStatus() {
@@ -71,6 +94,18 @@ public class GehazItem {
     }
 
     public double getCost() {
-        return cost;
+        return customCost;
+    }
+
+    public GehazItemType getItemType() {
+        return itemType;
+    }
+
+    public void display() {
+        if (itemType != null) {
+            itemType.displayItem(brideId, status);
+        } else {
+            System.out.println("Unknown Gehaz Item Status: " + status);
+        }
     }
 }
