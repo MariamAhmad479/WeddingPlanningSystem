@@ -3,9 +3,17 @@ package entity;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.function.Predicate;
 
+import entity.iterator.GehazItemFilter;
+import entity.iterator.GehazItemIterator;
 import enumeration.GehazStatus;
-public class GehazItemList {
+
+/**
+ * Now implements Iterable<GehazItem> (Iterator Pattern).
+ * Provides both a default iterator and a filtered iterator.
+ */
+public class GehazItemList implements Iterable<GehazItem> {
 
     private String brideId;
     private double totalBudget;
@@ -89,6 +97,19 @@ public class GehazItemList {
 
     public List<GehazItem> getItems() {
         return new ArrayList<>(gehazItems);
+    }
+
+    // ── Iterator Pattern ───────────────────────────────────────
+
+    /** Default iterator — iterates over ALL items. */
+    @Override
+    public Iterator<GehazItem> iterator() {
+        return new GehazItemIterator(gehazItems, GehazItemFilter.all());
+    }
+
+    /** Filtered iterator — iterates over only items matching the predicate. */
+    public Iterator<GehazItem> filteredIterator(Predicate<GehazItem> filter) {
+        return new GehazItemIterator(gehazItems, filter);
     }
 
 
